@@ -1,6 +1,6 @@
 "use client";
 
-import { useConvexAuth } from "convex/react";
+import { useSession } from "@/lib/providers/session-provider";
 import { redirect } from "next/navigation";
 
 import { Spinner } from "@/components/spinner";
@@ -12,7 +12,7 @@ const MainLayout = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { user, isLoading } = useSession();
 
   if (isLoading) {
     return (
@@ -22,19 +22,19 @@ const MainLayout = ({
     );
   }
 
-  if (!isAuthenticated) {
+  if (!user) {
     return redirect("/");
   }
 
-  return ( 
+  return (
     <div className="h-full flex dark:bg-[#1F1F1F]">
-        <Navigation />
+      <Navigation />
       <main className="flex-1 h-full overflow-y-auto">
         <SearchCommand />
         {children}
       </main>
     </div>
-   );
+  );
 }
- 
+
 export default MainLayout;

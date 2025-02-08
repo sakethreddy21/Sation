@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useUser } from "@clerk/clerk-react";
+import { useSession } from "@/lib/providers/session-provider";
 import { PlusCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -11,7 +11,7 @@ import { createDocument } from "@/lib/db/actions";
 
 const DocumentsPage = () => {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, isLoading } = useSession();
 
   const onCreate = async () => {
     if (!user?.id) return;
@@ -35,7 +35,7 @@ const DocumentsPage = () => {
     });
   };
 
-  return (
+  return ( 
     <div className="h-full flex flex-col items-center justify-center space-y-4">
       <Image
         src="/empty.png"
@@ -52,14 +52,14 @@ const DocumentsPage = () => {
         className="hidden dark:block"
       />
       <h2 className="text-lg font-medium">
-        Welcome to {user?.firstName}&apos;s Sation
+        Welcome to {user?.name}&apos;s Sation
       </h2>
       <Button onClick={onCreate}>
         <PlusCircle className="h-4 w-4 mr-2" />
         Create a note
       </Button>
     </div>
-  );
+   );
 }
-
+ 
 export default DocumentsPage;

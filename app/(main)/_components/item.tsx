@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useUser } from "@clerk/clerk-react";
+import { useSession } from "@/lib/providers/session-provider";
 
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,7 +48,7 @@ export const Item = ({
   onExpand,
   expanded,
 }: ItemProps) => {
-  const { user } = useUser();
+  const { user, isLoading } = useSession();
   const router = useRouter();
 
   const onArchive = async (
@@ -163,7 +163,7 @@ export const Item = ({
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <div className="text-xs text-muted-foreground p-2">
-                Last edited by ddddddddd: {user?.fullName}
+                Last edited by ddddddddd: {user?.name}
               </div>
             </DropdownMenuContent>
           </DropdownMenu>

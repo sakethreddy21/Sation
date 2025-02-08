@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { File } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@clerk/clerk-react";
+import { useSession } from "@/lib/providers/session-provider";
+
+
 
 import {
   CommandDialog,
@@ -17,10 +19,11 @@ import { useSearch } from "@/hooks/use-search";
 import { searchDocuments } from "@/lib/db/actions";
 
 export const SearchCommand = () => {
-  const { user } = useUser();
+  const { user } = useSession();
   const router = useRouter();
   const [documents, setDocuments] = useState<any[]>([]);
   const [isMounted, setIsMounted] = useState(false);
+
 
   const toggle = useSearch((store) => store.toggle);
   const isOpen = useSearch((store) => store.isOpen);

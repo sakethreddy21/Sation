@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useUser } from "@clerk/clerk-react";
+import { useSession } from "@/lib/providers/session-provider";
 import { toast } from "sonner";
 import { MoreHorizontal, Trash } from "lucide-react";
 
@@ -24,7 +24,7 @@ export const Menu = ({
   documentId
 }: MenuProps) => {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, isLoading } = useSession();
 
   const onArchive = async () => {
     const promise = archiveDocument(documentId)
@@ -60,7 +60,7 @@ export const Menu = ({
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <div className="text-xs text-muted-foreground p-2">
-          Last edited by: {user?.fullName}
+          Last edited by: {user?.name}
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

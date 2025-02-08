@@ -13,7 +13,7 @@ import { useParams, usePathname, useRouter } from "next/navigation";
 import { ElementRef, useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
 import { toast } from "sonner";
-import { useUser } from "@clerk/clerk-react";
+import { useSession } from "@/lib/providers/session-provider";
 
 import { cn } from "@/lib/utils";
 import { createDocument } from "@/lib/db/actions";
@@ -38,7 +38,7 @@ export const Navigation = () => {
   const params = useParams();
   const pathname = usePathname();
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const { user } = useUser();
+  const { user, isLoading } = useSession();
 
   const isResizingRef = useRef(false);
   const sidebarRef = useRef<ElementRef<"aside">>(null);

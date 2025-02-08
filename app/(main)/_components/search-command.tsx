@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { File } from "lucide-react";
 import { useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@clerk/clerk-react";
+import { useSession } from "@/lib/providers/session-provider";
 
 import {
     CommandDialog,
@@ -19,7 +19,7 @@ import { getUserDocuments } from "@/lib/db/actions";
 import { Document } from "@/lib/db/document-queries";
 
 export const SearchCommand = () => {
-    const { user } = useUser();
+    const { user } = useSession();
     const router = useRouter();
     const [isMounted, setIsMounted] = useState(false);
     const [documents, setDocuments] = useState<Document[]>([]);
@@ -62,7 +62,7 @@ export const SearchCommand = () => {
     return (
         <CommandDialog open={isOpen} onOpenChange={onClose}>
             <CommandInput
-                placeholder={`Search ${user?.fullName}'s Jotion...`}
+                placeholder={`Search ${user?.name}'s Jotion...`}
             />
             <CommandList>
                 <CommandEmpty>No results found.</CommandEmpty>
