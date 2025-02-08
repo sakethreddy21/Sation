@@ -1,40 +1,74 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
 import dynamic from "next/dynamic";
-import { useMemo } from "react";
-
-import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
+import { useMemo, useEffect, useState } from "react";
+import { getDocument, updateDocument } from "@/lib/db/actions";
+import { Document } from "@/lib/db/document-queries";
 import { Toolbar } from "@/components/toolbar";
 import { Cover } from "@/components/cover";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface DocumentIdPageProps {
   params: {
-    documentId: Id<"documents">;
+    documentId: string;
   };
 };
 
 const DocumentIdPage = ({
   params
 }: DocumentIdPageProps) => {
-  const Editor = useMemo(() => dynamic(() => import("@/components/editor"), { ssr: false }) ,[]);
+  const Editor = useMemo(() => dynamic(() => import("@/components/editor"), { ssr: false }), []);
+  const [document, setDocument] = useState<Document | null | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const document = useQuery(api.documents.getById, {
-    documentId: params.documentId
-  });
+  useEffect(() => {
+    const fetchDocument = async () => {
+      try {
+        const doc = await getDocument(params.documentId);
+        if (doc) {
+          // Convert PostgreSQL document to match Convex structure
+          const convertedDoc = {
+            ...doc,
+            _id: doc.id,
+            _creationTime: new Date(doc.created_at).getTime(),
+          };
+          setDocument(convertedDoc);
+        } else {
+          setDocument(null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch document:', error);
+        setDocument(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const update = useMutation(api.documents.update);
+    fetchDocument();
+  }, [params.documentId]);
 
-  const onChange = (content: string) => {
-    update({
-      id: params.documentId,
-      content
-    });
+  const onChange = async (content: string) => {
+    if (!document) return;
+
+    try {
+      const updated = await updateDocument(params.documentId, {
+        content
+      });
+      if (updated) {
+        // Convert the updated document
+        const convertedDoc = {
+          ...updated,
+          _id: updated.id,
+          _creationTime: new Date(updated.created_at).getTime(),
+        };
+        setDocument(convertedDoc);
+      }
+    } catch (error) {
+      console.error('Failed to update document:', error);
+    }
   };
 
-  if (document === undefined) {
+  if (isLoading) {
     return (
       <div>
         <Cover.Skeleton />
@@ -50,13 +84,13 @@ const DocumentIdPage = ({
     );
   }
 
-  if (document === null) {
+  if (!document) {
     return <div>Not found</div>
   }
 
-  return ( 
+  return (
     <div className="pb-40">
-      <Cover url={document.coverImage} />
+      <Cover url={document.coverimage} />
       <div className="md:max-w-3xl lg:max-w-4xl mx-auto">
         <Toolbar initialData={document} />
         <Editor
@@ -65,7 +99,7 @@ const DocumentIdPage = ({
         />
       </div>
     </div>
-   );
+  );
 }
- 
+
 export default DocumentIdPage;

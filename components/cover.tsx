@@ -2,15 +2,14 @@
 
 import Image from "next/image";
 import { ImageIcon, X } from "lucide-react";
-import { useMutation } from "convex/react";
 import { useParams } from "next/navigation";
+import { useState, useEffect } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useCoverImage } from "@/hooks/use-cover-image";
-import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
+import { updateDocument, getDocument } from "@/lib/db/actions";
 import { useEdgeStore } from "@/lib/edgestore";
 
 interface CoverImageProps {
@@ -19,13 +18,29 @@ interface CoverImageProps {
 }
 
 export const Cover = ({
-  url,
+  url: initialUrl,
   preview,
 }: CoverImageProps) => {
   const { edgestore } = useEdgeStore();
   const params = useParams();
   const coverImage = useCoverImage();
-  const removeCoverImage = useMutation(api.documents.removeCoverImage);
+  const [url, setUrl] = useState(initialUrl);
+
+  useEffect(() => {
+    const handleRefresh = async () => {
+      if (!preview && params.documentId) {
+        const doc = await getDocument(params.documentId as string);
+        if (doc) {
+          setUrl(doc.coverimage);
+        }
+      }
+    };
+
+    window.addEventListener('refresh-document', handleRefresh);
+    return () => {
+      window.removeEventListener('refresh-document', handleRefresh);
+    };
+  }, [params.documentId, preview]);
 
   const onRemove = async () => {
     if (url) {
@@ -33,9 +48,13 @@ export const Cover = ({
         url: url
       })
     }
-    removeCoverImage({
-      id: params.documentId as Id<"documents">
+    await updateDocument(params.documentId as string, {
+      coverimage: undefined
     });
+
+    // Update UI immediately
+    setUrl(undefined);
+    window.dispatchEvent(new Event('refresh-document'));
   };
 
   return (

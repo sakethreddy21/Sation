@@ -2,18 +2,21 @@
 
 import { ElementRef, useRef, useState } from "react";
 import { ImageIcon, Smile, X } from "lucide-react";
-import { useMutation } from "convex/react";
 import TextareaAutosize from "react-textarea-autosize";
 
 import { useCoverImage } from "@/hooks/use-cover-image";
-import { Doc } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
-import { api } from "@/convex/_generated/api";
+import { updateDocument } from "@/lib/db/actions";
 
 import { IconPicker } from "./icon-picker";
 
 interface ToolbarProps {
-  initialData: Doc<"documents">;
+  initialData: {
+    id: string;
+    title: string;
+    icon?: string;
+    coverImage?: string;
+  };
   preview?: boolean;
 };
 
@@ -24,9 +27,6 @@ export const Toolbar = ({
   const inputRef = useRef<ElementRef<"textarea">>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [value, setValue] = useState(initialData.title);
-
-  const update = useMutation(api.documents.update);
-  const removeIcon = useMutation(api.documents.removeIcon);
 
   const coverImage = useCoverImage();
 
@@ -42,10 +42,9 @@ export const Toolbar = ({
 
   const disableInput = () => setIsEditing(false);
 
-  const onInput = (value: string) => {
+  const onInput = async (value: string) => {
     setValue(value);
-    update({
-      id: initialData._id,
+    await updateDocument(initialData.id, {
       title: value || "Untitled"
     });
   };
@@ -59,17 +58,16 @@ export const Toolbar = ({
     }
   };
 
-  const onIconSelect = (icon: string) => {
-    update({
-      id: initialData._id,
+  const onIconSelect = async (icon: string) => {
+    await updateDocument(initialData.id, {
       icon,
     });
   };
 
-  const onRemoveIcon = () => {
-    removeIcon({
-      id: initialData._id
-    })
+  const onRemoveIcon = async () => {
+    await updateDocument(initialData.id, {
+      icon: undefined
+    });
   }
 
   return (

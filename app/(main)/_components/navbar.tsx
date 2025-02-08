@@ -3,14 +3,13 @@
 import { useQuery } from "convex/react";
 import { useParams } from "next/navigation";
 import { MenuIcon } from "lucide-react";
-
-import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
-
+import { useEffect, useState } from "react";
 import { Title } from "./title";
 import { Banner } from "./banner";
 import { Menu } from "./menu";
 import { Publish } from "./publish";
+import { getDocument } from "@/lib/db/actions";
+import { Document } from "@/lib/db/document-queries";
 
 interface NavbarProps {
   isCollapsed: boolean;
@@ -22,12 +21,41 @@ export const Navbar = ({
   onResetWidth
 }: NavbarProps) => {
   const params = useParams();
+  const [document, setDocument] = useState<Document | null>(null);
 
-  const document = useQuery(api.documents.getById, {
-    documentId: params.documentId as Id<"documents">,
-  });
+  useEffect(() => {
+    const fetchDocument = async () => {
+      if (!params.documentId) return;
 
-  if (document === undefined) {
+      try {
+        const doc = await getDocument(params.documentId as string);
+        if (doc) {
+          const convertedDoc = {
+            ...doc,
+            _id: doc.id,
+            _creationTime: new Date(doc.created_at).getTime(),
+            id: doc.id,
+            title: doc.title,
+            userId: doc.userId,
+            isArchived: doc.isArchived,
+            content: doc.content,
+            coverimage: doc.coverimage,
+            icon: doc.icon,
+            isPublished: doc.isPublished,
+            created_at: doc.created_at,
+            updated_at: doc.updated_at
+          };
+          setDocument(convertedDoc as Document);
+        }
+      } catch (error) {
+        console.error('Failed to fetch document:', error);
+      }
+    };
+
+    fetchDocument();
+  }, [params.documentId]);
+
+  if (document === null) {
     return (
       <nav className="bg-background dark:bg-[#1F1F1F] px-3 py-2 w-full flex items-center justify-between">
         <Title.Skeleton />
@@ -38,8 +66,12 @@ export const Navbar = ({
     )
   }
 
-  if (document === null) {
-    return null;
+  if (document.isArchived) {
+    return (
+      <nav className="bg-background dark:bg-[#1F1F1F] px-3 py-2 w-full">
+        <Banner documentId={document.id} />
+      </nav>
+    )
   }
 
   return (
@@ -56,13 +88,10 @@ export const Navbar = ({
           <Title initialData={document} />
           <div className="flex items-center gap-x-2">
             <Publish initialData={document} />
-            <Menu documentId={document._id} />
+            <Menu documentId={document.id} />
           </div>
         </div>
       </nav>
-      {document.isArchived && (
-        <Banner documentId={document._id} />
-      )}
     </>
-  )
-}
+  );
+};

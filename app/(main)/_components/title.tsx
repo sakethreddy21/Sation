@@ -1,24 +1,20 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useMutation } from "convex/react";
-
-import { Doc } from "@/convex/_generated/dataModel";
-import { api } from "@/convex/_generated/api";
+import { Document } from "@/lib/db/document-queries";
+import { updateDocument } from "@/lib/db/actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface TitleProps {
-  initialData: Doc<"documents">;
+  initialData: Document;
 };
 
 export const Title = ({
   initialData
 }: TitleProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const update = useMutation(api.documents.update);
-
   const [title, setTitle] = useState(initialData.title || "Untitled");
   const [isEditing, setIsEditing] = useState(false);
 
@@ -35,12 +31,11 @@ export const Title = ({
     setIsEditing(false);
   };
 
-  const onChange = (
+  const onChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     setTitle(event.target.value);
-    update({
-      id: initialData._id,
+    await updateDocument(initialData.id, {
       title: event.target.value || "Untitled"
     });
   };

@@ -1,43 +1,38 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { Check, Copy, Globe } from "lucide-react";
 
-import { Doc } from "@/convex/_generated/dataModel";
+import { Document } from "@/lib/db/document-queries";
+import { updateDocument } from "@/lib/db/actions";
 import {
   PopoverTrigger,
   Popover,
   PopoverContent
 } from "@/components/ui/popover"
 import { useOrigin } from "@/hooks/use-origin";
-import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 
 interface PublishProps {
-  initialData: Doc<"documents">
+  initialData: Document;
 };
 
 export const Publish = ({
   initialData
 }: PublishProps) => {
   const origin = useOrigin();
-  const update = useMutation(api.documents.update);
-
   const [copied, setCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const url = `${origin}/preview/${initialData._id}`;
+  const url = `${origin}/preview/${initialData.id}`;
 
-  const onPublish = () => {
+  const onPublish = async () => {
     setIsSubmitting(true);
 
-    const promise = update({
-      id: initialData._id,
+    const promise = updateDocument(initialData.id, {
       isPublished: true,
-    })
-      .finally(() => setIsSubmitting(false));
+    }).finally(() => setIsSubmitting(false));
 
     toast.promise(promise, {
       loading: "Publishing...",
@@ -46,14 +41,12 @@ export const Publish = ({
     });
   };
 
-  const onUnpublish = () => {
+  const onUnpublish = async () => {
     setIsSubmitting(true);
 
-    const promise = update({
-      id: initialData._id,
+    const promise = updateDocument(initialData.id, {
       isPublished: false,
-    })
-      .finally(() => setIsSubmitting(false));
+    }).finally(() => setIsSubmitting(false));
 
     toast.promise(promise, {
       loading: "Unpublishing...",
@@ -74,25 +67,17 @@ export const Publish = ({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        {initialData.isPublished ? (<Button size="sm" variant="ghost">
-          Published 
-          {initialData.isPublished && (
-            <Globe
-              className="text-sky-500 w-4 h-4 ml-2"
-            />
-          )}
-        </Button>):(<Button size="sm" variant="ghost">
+        <Button size="sm" variant="ghost">
           Publish
           {initialData.isPublished && (
             <Globe
               className="text-sky-500 w-4 h-4 ml-2"
             />
           )}
-        </Button>)}
-        
+        </Button>
       </PopoverTrigger>
-      <PopoverContent 
-        className="w-72" 
+      <PopoverContent
+        className="w-72"
         align="end"
         alignOffset={8}
         forceMount
@@ -106,7 +91,7 @@ export const Publish = ({
               </p>
             </div>
             <div className="flex items-center">
-              <input 
+              <input
                 className="flex-1 px-2 text-xs border rounded-l-md h-8 bg-muted truncate"
                 value={url}
                 disabled

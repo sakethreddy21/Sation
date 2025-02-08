@@ -1,22 +1,20 @@
 "use client";
 
-import { 
-  ChevronDown, 
-  ChevronRight, 
+import {
+  ChevronDown,
+  ChevronRight,
   LucideIcon,
   MoreHorizontal,
   Plus,
   Trash
 } from "lucide-react";
-import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useUser } from "@clerk/clerk-react";
 
-import { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { api } from "@/convex/_generated/api";
+import { archiveDocument, createDocumentWithParent } from "@/lib/db/actions";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -26,7 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface ItemProps {
-  id?: Id<"documents">;
+  id?: string;
   documentIcon?: string;
   active?: boolean;
   expanded?: boolean;
@@ -52,16 +50,20 @@ export const Item = ({
 }: ItemProps) => {
   const { user } = useUser();
   const router = useRouter();
-  const create = useMutation(api.documents.create);
-  const archive = useMutation(api.documents.archive);
 
-  const onArchive = (
+  const onArchive = async (
     event: React.MouseEvent<HTMLDivElement, MouseEvent>
   ) => {
     event.stopPropagation();
     if (!id) return;
-    const promise = archive({ id })
-      .then(() => router.push("/documents"))
+
+    const promise = archiveDocument(id)
+      .then(() => {
+        window.dispatchEvent(new Event('refresh-document-list'));
+        setTimeout(() => {
+          router.push("/documents");
+        }, 100);
+      });
 
     toast.promise(promise, {
       loading: "Moving to trash...",
@@ -77,17 +79,23 @@ export const Item = ({
     onExpand?.();
   };
 
-  const onCreate = (
+  const onCreate = async (
     event: React.MouseEvent<HTMLDivElement, MouseEvent>
   ) => {
     event.stopPropagation();
-    if (!id) return;
-    const promise = create({ title: "Untitled", parentDocument: id })
-      .then((documentId) => {
+    if (!id || !user?.id) return;
+
+    const promise = createDocumentWithParent({
+      title: "Untitled",
+      userId: user.id,
+      parentDocument: id
+    })
+      .then((document) => {
         if (!expanded) {
           onExpand?.();
         }
-        router.push(`/documents/${documentId}`);
+        window.dispatchEvent(new Event('refresh-document-list'));
+        router.push(`/documents/${document.id}`);
       });
 
     toast.promise(promise, {
@@ -103,7 +111,7 @@ export const Item = ({
     <div
       onClick={onClick}
       role="button"
-      style={{ 
+      style={{
         paddingLeft: level ? `${(level * 12) + 12}px` : "12px"
       }}
       className={cn(
@@ -111,23 +119,13 @@ export const Item = ({
         active && "bg-primary/5 text-primary"
       )}
     >
-      {!!id && (
-        <div
-          role="button"
-          className="h-full rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600 mr-1"
-          onClick={handleExpand}
-        >
-          <ChevronIcon
-            className="h-4 w-4 shrink-0 text-muted-foreground/50"
-          />
-        </div>
-      )}
+
       {documentIcon ? (
         <div className="shrink-0 mr-2 text-[18px]">
           {documentIcon}
         </div>
       ) : (
-        <Icon 
+        <Icon
           className="shrink-0 h-[18px] w-[18px] mr-2 text-muted-foreground"
         />
       )}
@@ -165,17 +163,11 @@ export const Item = ({
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <div className="text-xs text-muted-foreground p-2">
-                Last edited by: {user?.fullName}
+                Last edited by ddddddddd: {user?.fullName}
               </div>
             </DropdownMenuContent>
           </DropdownMenu>
-          <div
-            role="button"
-            onClick={onCreate}
-            className="opacity-0 group-hover:opacity-100 h-full ml-auto rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600"
-          >
-            <Plus className="h-4 w-4 text-muted-foreground" />
-          </div>
+
         </div>
       )}
     </div>

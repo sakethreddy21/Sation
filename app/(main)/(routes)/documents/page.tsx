@@ -3,21 +3,30 @@
 import Image from "next/image";
 import { useUser } from "@clerk/clerk-react";
 import { PlusCircle } from "lucide-react";
-import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
+import { createDocument } from "@/lib/db/actions";
 
 const DocumentsPage = () => {
   const router = useRouter();
   const { user } = useUser();
-  const create = useMutation(api.documents.create);
 
-  const onCreate = () => {
-    const promise = create({ title: "Untitled" })
-      .then((documentId) => router.push(`/documents/${documentId}`))
+  const onCreate = async () => {
+    if (!user?.id) return;
+
+    const promise = createDocument({
+      title: "Untitled",
+      userId: user.id,
+      isPublished: false,
+      isArchived: false,
+    })
+      .then((document) => router.push(`/documents/${document.id}`))
+      .catch((error) => {
+        console.error('Failed to create document:', error);
+        throw error;
+      });
 
     toast.promise(promise, {
       loading: "Creating a new note...",
@@ -26,7 +35,7 @@ const DocumentsPage = () => {
     });
   };
 
-  return ( 
+  return (
     <div className="h-full flex flex-col items-center justify-center space-y-4">
       <Image
         src="/empty.png"
@@ -50,7 +59,7 @@ const DocumentsPage = () => {
         Create a note
       </Button>
     </div>
-   );
+  );
 }
- 
+
 export default DocumentsPage;

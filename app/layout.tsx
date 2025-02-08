@@ -11,6 +11,7 @@ import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
+
 export const metadata: Metadata = {
   title: 'Sation',
   description: 'The connected workspace where better, faster work happens.',
@@ -35,6 +36,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>

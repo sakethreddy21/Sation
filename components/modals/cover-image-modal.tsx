@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation } from "convex/react";
 import { useParams } from "next/navigation";
 
 import {
@@ -12,15 +11,13 @@ import {
 import { useCoverImage } from "@/hooks/use-cover-image";
 import { SingleImageDropzone } from "@/components/single-image-dropzone";
 import { useEdgeStore } from "@/lib/edgestore";
-import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
+import { updateDocument } from "@/lib/db/actions";
 
 export const CoverImageModal = () => {
   const params = useParams();
-  const update = useMutation(api.documents.update);
   const coverImage = useCoverImage();
   const { edgestore } = useEdgeStore();
-  
+
   const [file, setFile] = useState<File>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,11 +39,12 @@ export const CoverImageModal = () => {
         }
       });
 
-      await update({
-        id: params.documentId as Id<"documents">,
-        coverImage: res.url
+      await updateDocument(params.documentId as string, {
+        coverimage: res.url
       });
 
+      // Dispatch event to update UI
+      window.dispatchEvent(new Event('refresh-document'));
       onClose();
     }
   }

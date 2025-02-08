@@ -12,11 +12,11 @@ import {
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { ElementRef, useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
-import { useMutation } from "convex/react";
 import { toast } from "sonner";
+import { useUser } from "@clerk/clerk-react";
 
 import { cn } from "@/lib/utils";
-import { api } from "@/convex/_generated/api";
+import { createDocument } from "@/lib/db/actions";
 import {
   Popover,
   PopoverTrigger,
@@ -31,7 +31,6 @@ import { DocumentList } from "./document-list";
 import { TrashBox } from "./trash-box";
 import { Navbar } from "./navbar";
 
-
 export const Navigation = () => {
   const router = useRouter();
   const search = useSearch();
@@ -39,13 +38,14 @@ export const Navigation = () => {
   const params = useParams();
   const pathname = usePathname();
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const create = useMutation(api.documents.create);
+  const { user } = useUser();
 
   const isResizingRef = useRef(false);
   const sidebarRef = useRef<ElementRef<"aside">>(null);
   const navbarRef = useRef<ElementRef<"div">>(null);
   const [isResetting, setIsResetting] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(isMobile);
+  const [documentListVersion, setDocumentListVersion] = useState(0);
 
   useEffect(() => {
     if (isMobile) {
@@ -122,9 +122,19 @@ export const Navigation = () => {
     }
   }
 
-  const handleCreate = () => {
-    const promise = create({ title: "Untitled" })
-      .then((documentId) => router.push(`/documents/${documentId}`))
+  const handleCreate = async () => {
+    if (!user?.id) return;
+
+    const promise = createDocument({
+      title: "Untitled",
+      userId: user.id,
+      isPublished: false,
+      isArchived: false,
+    })
+      .then((document) => {
+        window.dispatchEvent(new Event('refresh-document-list'));
+        router.push(`/documents/${document.id}`);
+      });
 
     toast.promise(promise, {
       loading: "Creating a new note...",
@@ -173,7 +183,7 @@ export const Navigation = () => {
           />
         </div>
         <div className="mt-4">
-          <DocumentList />
+          <DocumentList key={documentListVersion} />
           <Item
             onClick={handleCreate}
             icon={Plus}
@@ -205,7 +215,7 @@ export const Navigation = () => {
           isMobile && "left-0 w-full"
         )}
       >
-         {!!params.documentId ? (
+        {!!params.documentId ? (
           <Navbar
             isCollapsed={isCollapsed}
             onResetWidth={resetWidth}
@@ -215,7 +225,6 @@ export const Navigation = () => {
             {isCollapsed && <MenuIcon onClick={resetWidth} role="button" className="h-6 w-6 text-muted-foreground" />}
           </nav>
         )}
-        
       </div>
     </>
   )

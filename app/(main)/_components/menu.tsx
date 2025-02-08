@@ -2,11 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/clerk-react";
-import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { MoreHorizontal, Trash } from "lucide-react";
 
-import { Id } from "@/convex/_generated/dataModel";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -14,12 +12,12 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
-import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { archiveDocument } from "@/lib/db/actions";
 
 interface MenuProps {
-  documentId: Id<"documents">;
+  documentId: string;
 };
 
 export const Menu = ({
@@ -28,18 +26,19 @@ export const Menu = ({
   const router = useRouter();
   const { user } = useUser();
 
-  const archive = useMutation(api.documents.archive);
-
-  const onArchive = () => {
-    const promise = archive({ id: documentId })
+  const onArchive = async () => {
+    const promise = archiveDocument(documentId)
+      .then(() => {
+        // Trigger refresh of document list
+        window.dispatchEvent(new Event('refresh-document-list'));
+        router.push("/documents");
+      });
 
     toast.promise(promise, {
       loading: "Moving to trash...",
       success: "Note moved to trash!",
       error: "Failed to archive note."
     });
-
-    router.push("/documents");
   };
 
   return (
@@ -49,10 +48,10 @@ export const Menu = ({
           <MoreHorizontal className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent 
-        className="w-60" 
-        align="end" 
-        alignOffset={8} 
+      <DropdownMenuContent
+        className="w-60"
+        align="end"
+        alignOffset={8}
         forceMount
       >
         <DropdownMenuItem onClick={onArchive}>
